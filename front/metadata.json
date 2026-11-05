@@ -1,0 +1,6 @@
+{
+  "name": "Leaflet Route Planner",
+  "description": "Интерактивная карта с возможностью настройки параметров маршрута через пользовательское меню.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

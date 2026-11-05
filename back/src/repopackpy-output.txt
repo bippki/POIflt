@@ -1,0 +1,259 @@
+================================================================
+Backend Repository Structure
+================================================================
+app.controller.ts
+app.module.ts
+app.service.ts
+controller\poi.controller.ts
+entity\poi.entity.ts
+entity\review.entity.ts
+main.ts
+module\poi.module.ts
+service\poi.service.ts
+
+================================================================
+Repository Files
+================================================================
+
+================
+File: app.controller.ts
+================
+import { Controller, Get } from '@nestjs/common';
+import { AppService } from './app.service';
+
+@Controller()
+export class AppController {
+  constructor(private readonly appService: AppService) {}
+
+  @Get()
+  getHello(): string {
+    return this.appService.getHello();
+  }
+}
+
+================
+File: app.module.ts
+================
+import { Module } from '@nestjs/common';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Poi } from './entity/poi.entity';
+import { Review } from './entity/review.entity';
+import { PoiModule } from './module/poi.module';
+
+@Module({
+  imports: [
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      host: ****,
+      port: ****,
+      username: ****,
+      password: ****,
+      database: ****,
+      entities: [Poi, Review],
+      synchronize: false,
+    }),
+    PoiModule,
+  ],
+  controllers: [AppController],
+  providers: [AppService],
+})
+export class AppModule { }
+
+================
+File: app.service.ts
+================
+import { Injectable } from '@nestjs/common';
+
+@Injectable()
+export class AppService {
+  getHello(): string {
+    return 'Hello World!';
+  }
+}
+
+================
+File: main.ts
+================
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+
+  app.enableCors({
+    origin: 'http://localhost:5173',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+  });
+
+  await app.listen(3000);
+}
+bootstrap();
+
+================
+File: controller\poi.controller.ts
+================
+import { Controller, Get, Query } from '@nestjs/common';
+import { PoiService } from '../service/poi.service';
+
+@Controller('poi')
+export class PoiController {
+    constructor(private readonly poiService: PoiService) { }
+
+    @Get('nearby')
+    async findNearby(
+        @Query('lat') lat: number,
+        @Query('lng') lng: number,
+    ) {
+        return await this.poiService.findNearbyRaw(lat, lng);
+    }
+
+    @Get('nearby/recommended')
+    async findRecommended(
+        @Query('lat') lat: number,
+        @Query('lng') lng: number,
+        @Query('limit') limit: number = 5,
+    ) {
+        return await this.poiService.getRecommendedNearby(lat, lng, limit);
+    }
+}
+
+================
+File: entity\poi.entity.ts
+================
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import { Review } from './review.entity';
+
+@Entity()
+export class Poi {
+    @PrimaryGeneratedColumn()
+    id!: number;
+
+    @Column()
+    name!: string;
+
+    @Column()
+    address!: string;
+
+    @Column({ type: 'geography', spatialFeatureType: 'Point', srid: 4326 })
+    geom!: string;
+
+    @Column()
+    category!: string;
+
+    @OneToMany(() => Review, (review) => review.poi)
+    reviews!: Review[];
+}
+
+================
+File: entity\review.entity.ts
+================
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Poi } from './poi.entity';
+
+@Entity('reviews')
+export class Review {
+    @PrimaryGeneratedColumn()
+    id: number;
+
+    @Column()
+    poi_id: number;
+
+    @Column({ type: 'numeric', nullable: true })
+    rating?: number; // Может быть null
+
+    @Column({ nullable: true })
+    text?: string; // Может быть null
+
+    @ManyToOne(() => Poi, (poi) => poi.reviews)
+    @JoinColumn({ name: 'poi_id' })
+    poi: Poi;
+}
+
+================
+File: module\poi.module.ts
+================
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { PoiController } from '../controller/poi.controller';
+import { Poi } from '../entity/poi.entity';
+import { Review } from '../entity/review.entity';
+import { HttpModule } from '@nestjs/axios';
+import { PoiService } from '../service/poi.service';
+
+
+@Module({
+    imports: [
+        HttpModule,
+        TypeOrmModule.forFeature
+            ([Poi, Review])],
+    controllers: [PoiController],
+    providers: [PoiService],
+})
+export class PoiModule { }
+
+================
+File: service\poi.service.ts
+================
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
+import { Poi } from '../entity/poi.entity';
+import { AxiosError } from 'axios';
+
+@Injectable()
+export class PoiService {
+    private readonly logger = new Logger(PoiService.name);
+
+    constructor(
+        @InjectRepository(Poi)
+        private readonly poiRepo: Repository<Poi>,
+        private readonly httpService: HttpService,
+    ) { }
+
+    async findNearbyRaw(lat: number, lng: number) {
+        return await this.poiRepo
+            .createQueryBuilder('poi')
+            .leftJoinAndSelect('poi.reviews', 'reviews')
+            .where(
+                `ST_DWithin(poi.geom, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326), 1000)`,
+                { lat, lng },
+            )
+            .getMany();
+    }
+
+    async getRecommendedNearby(lat: number, lng: number, limit: number) {
+        const pois = await this.findNearbyRaw(lat, lng);
+        if (pois.length === 0) return [];
+
+        try {
+            const { data } = await firstValueFrom(
+                this.httpService.post('http://localhost:8000/recommend', {
+                    pois: pois,
+                    top_k: limit,
+                    preferred_rubrics: [],
+                }),
+            );
+            return data;
+        } catch (error: unknown) {
+            const errorMessage = error instanceof AxiosError
+                ? error.response?.data?.message || error.message
+                : 'Unknown error';
+
+            this.logger.error(`AI Service failure: ${errorMessage}`);
+
+            throw new HttpException(
+                {
+                    status: HttpStatus.SERVICE_UNAVAILABLE,
+                    error: 'AI Recommendation Service is currently unavailable',
+                    details: errorMessage,
+                },
+                HttpStatus.SERVICE_UNAVAILABLE,
+            );
+        }
+    }
+}

@@ -1,0 +1,2328 @@
+
+================================================================
+Frontend Repository Structure
+================================================================
+App.tsx
+components\MapCanvas.tsx
+components\Map\MapController.tsx
+components\Map\MapControls.tsx
+components\Map\MapEventsHandler.tsx
+components\Map\POIMarkers.tsx
+components\Map\RadarOverlay.tsx
+components\Map\UserMarkers.tsx
+components\MarkerTool.tsx
+components\RouteMenu.tsx
+components\RoutingControl.tsx
+config\mapConfig.ts
+hooks\UseMapRoutes.ts
+index.css
+main.tsx
+types.ts
+views\MapView.tsx
+
+================================================================
+Repository Files
+================================================================
+
+================
+File: App.tsx
+================
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import MapView from './views/MapView';
+
+export default function App() {
+    return <MapView />;
+}
+
+================
+File: index.css
+================
+/* Plain CSS - No Tailwind */
+@import "leaflet/dist/leaflet.css";
+@import "leaflet-routing-machine/dist/leaflet-routing-machine.css";
+
+:root {
+  --natural-bg: #fcfaf7;
+  --natural-ink: #4a1010;
+  --natural-sage: #e53935;
+  --natural-sand: #d32f2f;
+  --natural-border: #e8e2e2;
+  --natural-surface: #fff5f5;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--natural-bg);
+  font-family: var(--font-sans);
+  color: var(--natural-ink);
+}
+
+/* Map specific */
+#map-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  background: var(--natural-bg) !important;
+  outline: none;
+}
+
+/* UI Overlays */
+.route-menu-container {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.trigger-button {
+  background: var(--natural-ink);
+  color: white;
+  border: none;
+  border-radius: 0;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+  font-weight: 600;
+}
+
+.trigger-button:hover {
+  background: #3a0d0d;
+}
+
+.menu-card {
+  width: 320px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border-radius: 0;
+  padding: 24px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--natural-border);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.section-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: #a39f91;
+  font-weight: 700;
+  margin-bottom: 12px;
+  margin-top: 0;
+}
+
+/* Categories Grid */
+.categories-grid {
+  display: grid;
+  grid-template-cols: 1fr 1fr;
+  gap: 8px;
+}
+
+.category-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 0;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #8c7a7a;
+}
+
+.category-item.active {
+  background: var(--natural-surface);
+  border-color: var(--natural-ink);
+  color: var(--natural-ink);
+}
+
+.category-icon {
+  display: flex;
+  align-items: center;
+}
+
+.category-item.active .category-icon {
+  color: var(--natural-sage);
+}
+
+.category-label {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Steps & Options */
+.divider {
+  border-top: 1px solid #f0ede4;
+  padding-top: 20px;
+}
+
+.slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.steps-badge {
+  font-size: 12px;
+  font-family: monospace;
+  font-weight: 700;
+  background: var(--natural-surface);
+  padding: 2px 8px;
+  border-radius: 0;
+}
+
+.custom-slider {
+  width: 100%;
+  height: 6px;
+  background: #f0ede4;
+  border-radius: 0;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.custom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--natural-sage);
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.slider-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: #a39f91;
+  margin-top: 4px;
+}
+
+/* Toggle Switch */
+.toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(245, 242, 237, 0.5);
+  padding: 12px;
+  border-radius: 0;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.toggle-row:hover {
+  background: var(--natural-surface);
+  border-color: var(--natural-border);
+}
+
+.toggle-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.toggle-icon {
+  padding: 8px;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+}
+
+.toggle-icon.active {
+  background: rgba(229, 57, 53, 0.1);
+  color: var(--natural-sage);
+}
+
+.toggle-icon.inactive {
+  background: #f3f4f6;
+  color: #9ca3af;
+}
+
+.toggle-bg {
+  position: relative;
+  width: 40px;
+  height: 20px;
+  border-radius: 0;
+  transition: background 0.2s;
+}
+
+.toggle-bg.active { background: var(--natural-sage); }
+.toggle-bg.inactive { background: var(--natural-border); }
+
+.toggle-knob {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 12px;
+  height: 12px;
+  background: white;
+  border-radius: 0;
+  transition: transform 0.2s;
+}
+
+.toggle-bg.active .toggle-knob {
+  transform: translateX(20px);
+}
+
+/* Action Button */
+.submit-button {
+  width: 100%;
+  background: var(--natural-sage);
+  color: white;
+  border: none;
+  padding: 16px;
+  border-radius: 0;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 10px 15px -3px rgba(229, 57, 53, 0.3);
+  transition: all 0.2s;
+  margin-top: 4px;
+}
+
+.submit-button:hover {
+  background: #c62828;
+}
+
+.submit-button:active {
+  transform: scale(0.98);
+}
+
+/* Marker Tool */
+.marker-tool-container {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.marker-button {
+  background: white;
+  color: var(--natural-ink);
+  border: 2px solid var(--natural-border);
+  border-radius: 0;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+}
+
+.marker-button:hover {
+  background: var(--natural-surface);
+  transform: translateY(-2px);
+  border-color: var(--natural-sage);
+}
+
+.marker-button:active {
+  cursor: grabbing;
+}
+
+.marker-tooltip {
+  position: absolute;
+  right: 60px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--natural-ink);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 0;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.marker-button:hover + .marker-tooltip {
+  opacity: 1;
+}
+
+/* Radar effect */
+.radar-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: rgba(229, 57, 53, 0.2);
+  border: 2px solid var(--natural-sage);
+  pointer-events: none;
+}
+
+.radar-button {
+  background: white;
+  color: var(--natural-ink);
+  border: 2px solid var(--natural-border);
+  border-radius: 0;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+}
+
+.radar-button.active {
+  background: var(--natural-sage);
+  color: white;
+  border-color: var(--natural-sage);
+  animation: pulse-border 2s infinite;
+}
+
+@keyframes pulse-border {
+  0% { box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(229, 57, 53, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(229, 57, 53, 0); }
+}
+
+/* Range Slider Styles */
+.range {
+  position: relative;
+  width: 100%;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  --min: 1000;
+  --max: 25000;
+  --p1: calc((var(--value-1) - var(--min)) / (var(--max) - var(--min)) * 100%);
+  --p2: calc((var(--value-2) - var(--min)) / (var(--max) - var(--min)) * 100%);
+}
+
+.range .track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: #f0ede4;
+  border-radius: 0;
+  z-index: 1;
+}
+
+.range .progress {
+  position: absolute;
+  left: var(--p1);
+  right: calc(100% - var(--p2));
+  height: 6px;
+  background: var(--natural-sage);
+  z-index: 2;
+}
+
+.range .thumbs {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  z-index: 3;
+}
+
+.range-input {
+  position: absolute;
+  width: 100%;
+  top: -3px;
+  left: 0;
+  background: none;
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+.range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--natural-sage);
+  border: 2px solid white;
+  pointer-events: auto;
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.range-input::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: var(--natural-sage);
+  border: 2px solid white;
+  pointer-events: auto;
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.range-output {
+  position: absolute;
+  top: -28px;
+  left: var(--value);
+  transform: translateX(-50%);
+  background: var(--natural-ink);
+  color: white;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-family: monospace;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+.range:hover .range-output {
+  opacity: 1;
+}
+
+================
+File: main.tsx
+================
+import {StrictMode} from 'react';
+import {createRoot} from 'react-dom/client';
+import './index.css';
+import App from './App.tsx';
+
+createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+        <App />
+    </StrictMode>,
+);
+
+================
+File: types.ts
+================
+export interface UserMarker {
+
+    id: string;
+
+    position: [number, number];
+
+    title: string;
+
+}
+
+
+
+export interface POI {
+
+    id: number;
+
+    name: string;
+
+    address: string;
+
+    category: string;
+
+    coordinates: [number, number]; // [lng, lat]
+
+    reviews?: string[];
+
+    score: number;
+
+    predicted_rating: number;
+
+    model_confidence: number;
+
+    review_count: number;
+
+}
+
+
+
+export interface RouteSegment {
+
+    path: [number, number][];
+
+    color: string;
+
+}
+
+
+
+export interface RouteData {
+
+    points: [number, number][]; // POI markers
+
+    segments: RouteSegment[];
+
+    pois: POI[];
+
+    totalDistance: number; // in meters
+
+    segmentDistances?: number[];
+
+    isReturnBack?: boolean;
+
+    activeSegmentIndex?: number | null;
+
+}
+
+================
+File: components\MapCanvas.tsx
+================
+import React from 'react';
+import { MapContainer, TileLayer } from 'react-leaflet';
+import L from 'leaflet';
+import RouteMenu from './RouteMenu';
+import RadarOverlay from './Map/RadarOverlay';
+import MapController from './Map/MapController';
+import MapEventsHandler from './Map/MapEventsHandler';
+import UserMarkers from './Map/UserMarkers';
+import POIMarkers from './Map/POIMarkers';
+import MapControls from './Map/MapControls';
+import RoutingControl from './RoutingControl';
+import { useMapRoutes } from '../hooks/useMapRoutes';
+
+// Fix for default marker icons using CDN
+const DefaultIcon = L.icon({
+    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41]
+});
+
+L.Marker.prototype.options.icon = DefaultIcon;
+
+export default function MapCanvas() {
+    const {
+        markers,
+        pois,
+        isScanning,
+        isLoading,
+        radarCenter,
+        route,
+        lockedPoiIds,
+        waypoints,
+        setRoute,
+        handleBuildRoute,
+        handleAddMarker,
+        handleMarkerMove,
+        handleMarkerDelete,
+        handleSelectSegment,
+        handleToggleLock,
+        handleClearRoute,
+        handleRebuild,
+        toggleRadar
+    } = useMapRoutes();
+
+    const handleDragStart = (e: React.DragEvent) => {
+        e.dataTransfer.setData('text/plain', 'marker');
+        e.dataTransfer.dropEffect = 'move';
+    };
+
+    return (
+        <div id="map-root">
+            <MapContainer
+                center={[51.5335, 46.0342]}
+                zoom={13}
+                zoomControl={false}
+                className="h-full w-full"
+            >
+                <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+
+                <MapEventsHandler onMarkerAdd={handleAddMarker} />
+
+                <MapController
+                    active={isScanning}
+                    center={radarCenter}
+                    radius={500}
+                />
+
+                <UserMarkers
+                    markers={route ? markers.filter(m => m.position[0] === route.points[0][0] && m.position[1] === route.points[0][1]) : markers}
+                    onMarkerDelete={handleMarkerDelete}
+                    onMarkerMove={handleMarkerMove}
+                />
+
+                <POIMarkers pois={route ? route.pois : pois} />
+
+                {route && (
+                    <RoutingControl
+                        waypoints={waypoints}
+                        onRouteFound={(distance) => {
+                            setRoute(prev => {
+                                if (!prev) return null;
+
+                                // If we are looking at a specific segment, update its distance
+                                if (prev.activeSegmentIndex != null && prev.activeSegmentIndex > 0) {
+                                    const newSegmentDistances = [...(prev.segmentDistances || [])];
+                                    newSegmentDistances[prev.activeSegmentIndex - 1] = distance;
+
+                                    if (JSON.stringify(prev.segmentDistances) !== JSON.stringify(newSegmentDistances)) {
+                                        return { ...prev, segmentDistances: newSegmentDistances };
+                                    }
+                                    return prev;
+                                }
+
+                                // If we are looking at the full route, update total distance
+                                if (prev.totalDistance !== distance) {
+                                    return { ...prev, totalDistance: distance };
+                                }
+                                return prev;
+                            });
+                        }}
+                    />
+                )}
+            </MapContainer>
+
+            <RouteMenu
+                onBuildRoute={handleBuildRoute}
+                activeRoute={route}
+                onClearRoute={handleClearRoute}
+                lockedPoiIds={lockedPoiIds}
+                onToggleLock={handleToggleLock}
+                onRebuild={handleRebuild}
+                onSelectSegment={handleSelectSegment}
+            />
+
+            <RadarOverlay active={isScanning} radius={300} />
+
+            <MapControls
+                isLoading={isLoading}
+                isScanning={isScanning}
+                onToggleRadar={toggleRadar}
+                onDragStart={handleDragStart}
+            />
+        </div>
+    );
+}
+
+================
+File: components\MarkerTool.tsx
+================
+import React from 'react';
+import { MapPin } from 'lucide-react';
+import { motion } from 'motion/react';
+
+interface MarkerToolProps {
+    onDragStart: (e: React.DragEvent) => void;
+}
+
+export default function MarkerTool({ onDragStart }: MarkerToolProps) {
+    return (
+        <div className="marker-tool-container" id="marker-tool-sidebar">
+            <div style={{ position: 'relative' }}>
+                <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    draggable="true"
+                    onDragStart={onDragStart}
+                    className="marker-button"
+                    id="marker-drag-source"
+                >
+                    <MapPin size={18} />
+                </motion.div>
+                <span className="marker-tooltip">Перетащите на карту</span>
+            </div>
+        </div>
+    );
+}
+
+================
+File: components\RouteMenu.tsx
+================
+import React, { useState } from 'react';
+import {
+    Settings, X,
+    Landmark, Trees, Utensils, Dumbbell, Ticket, Sparkles, Banknote,
+    Undo2, MapPin, Navigation, Lock, Unlock, RefreshCcw
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { RouteData } from '../types';
+import { getCategoryConfig } from './Map/POIMarkers';
+
+interface RouteMenuProps {
+    onBuildRoute: (settings: { categories: string[], minSteps: number, maxSteps: number, isReturnBack: boolean }) => void;
+    activeRoute: RouteData | null;
+    onClearRoute: () => void;
+    lockedPoiIds: Set<number>;
+    onToggleLock: (id: number) => void;
+    onRebuild: () => void;
+    onSelectSegment: (index: number | null) => void;
+}
+
+export default function RouteMenu({
+                                      onBuildRoute,
+                                      activeRoute,
+                                      onClearRoute,
+                                      lockedPoiIds,
+                                      onToggleLock,
+                                      onRebuild,
+                                      onSelectSegment
+                                  }: RouteMenuProps) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [selectedCategories, setSelectedCategories] = useState<string[]>(['culture', 'food_drink', 'natural_outdoor']);
+    const [minSteps, setMinSteps] = useState(3000);
+    const [maxSteps, setMaxSteps] = useState(8000);
+    const [isReturnBack, setIsReturnBack] = useState(false);
+
+    const categories = [
+        { id: 'culture', icon: <Landmark size={18} />, label: 'Культура' },
+        { id: 'natural_outdoor', icon: <Trees size={18} />, label: 'Природа' },
+        { id: 'food_drink', icon: <Utensils size={18} />, label: 'Еда' },
+        { id: 'sport', icon: <Dumbbell size={18} />, label: 'Спорт' },
+        { id: 'entertaiment', icon: <Ticket size={18} />, label: 'Развлечения' },
+        { id: 'beaty_wellness', icon: <Sparkles size={18} />, label: 'Красота' },
+        { id: 'retail', icon: <Banknote size={18} />, label: 'Шоппинг' },
+    ];
+
+    const toggleCategory = (id: string) => {
+        setSelectedCategories(prev =>
+            prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
+        );
+    };
+
+    const handleBuild = () => {
+        onBuildRoute({
+            categories: selectedCategories,
+            minSteps,
+            maxSteps,
+            isReturnBack
+        });
+        setIsOpen(false);
+    };
+
+    return (
+        <div className="route-menu-container" id="route-menu-wrapper">
+            {/* Trigger Button */}
+            <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setIsOpen(!isOpen)}
+                className={`trigger-button ${activeRoute ? 'has-route' : ''}`}
+                id="route-settings-trigger"
+                style={{
+                    background: activeRoute ? 'var(--natural-sage)' : 'white',
+                    color: activeRoute ? 'white' : 'var(--natural-ink)'
+                }}
+            >
+                {isOpen ? <X size={20} /> : (activeRoute ? <Navigation size={20} /> : <Settings size={20} />)}
+                <span>{activeRoute ? 'Ваш маршрут' : 'Параметры маршрута'}</span>
+            </motion.button>
+
+            {/* Menu Card */}
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                        className="menu-card"
+                        id="route-menu-card"
+                    >
+                        {activeRoute ? (
+                            /* Route Details View */
+                            <section>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                    <div>
+                                        <p className="section-title">Пеший маршрут</p>
+                                        <p style={{ fontSize: '10px', color: '#999', margin: 0 }}>По дорожкам и тротуарам</p>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <button
+                                            onClick={onRebuild}
+                                            title="Пересоздать маршрут"
+                                            style={{ padding: '4px', color: 'var(--natural-sage)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                                        >
+                                            <RefreshCcw size={14} />
+                                        </button>
+                                        <button
+                                            onClick={onClearRoute}
+                                            style={{ fontSize: '11px', color: '#ff4d4d', background: 'none', border: 'none', cursor: 'pointer' }}
+                                        >
+                                            Сбросить
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="poi-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    <div
+                                        onClick={() => onSelectSegment(0)}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '12px',
+                                            cursor: 'pointer',
+                                            padding: '4px',
+                                            borderRadius: '0',
+                                            background: activeRoute.activeSegmentIndex === 0 ? '#f3f4f6' : 'transparent'
+                                        }}
+                                    >
+                                        <div style={{ width: '24px', display: 'flex', justifyContent: 'center' }}>
+                                            <MapPin size={16} color={activeRoute.activeSegmentIndex === 0 ? 'var(--natural-sage)' : "#999"} />
+                                        </div>
+                                        <span style={{ fontSize: '13px', color: '#666', fontWeight: activeRoute.activeSegmentIndex === 0 ? 600 : 400 }}>Точка старта</span>
+                                    </div>
+
+                                    {activeRoute.pois.map((poi, idx) => {
+                                        const config = getCategoryConfig(poi.category);
+                                        const CategoryIcon = config.icon;
+                                        const isLocked = lockedPoiIds.has(poi.id);
+                                        const segmentIndex = idx + 1;
+                                        const isActive = activeRoute.activeSegmentIndex === segmentIndex;
+                                        const legDistance = activeRoute.segmentDistances ? activeRoute.segmentDistances[idx] : null;
+
+                                        return (
+                                            <div
+                                                key={poi.id}
+                                                onClick={() => onSelectSegment(isActive ? null : segmentIndex)}
+                                                style={{
+                                                    display: 'flex',
+                                                    alignItems: 'flex-start',
+                                                    gap: '12px',
+                                                    position: 'relative',
+                                                    cursor: 'pointer',
+                                                    padding: '6px',
+                                                    borderRadius: '0',
+                                                    background: isActive ? '#f3f4f6' : 'transparent',
+                                                    transition: 'background 0.2s'
+                                                }}
+                                            >                        {/* Connecting Line */}
+                                                <div style={{
+                                                    position: 'absolute',
+                                                    left: '11px',
+                                                    top: '-16px',
+                                                    bottom: '24px',
+                                                    width: '2px',
+                                                    background: '#eee',
+                                                    zIndex: 0
+                                                }} />
+
+                                                <div style={{
+                                                    width: '24px',
+                                                    height: '24px',
+                                                    borderRadius: '0',
+                                                    background: config.color,
+                                                    color: 'white',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    flexShrink: 0,
+                                                    zIndex: 1
+                                                }}>
+                                                    <CategoryIcon size={14} />
+                                                </div>
+
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
+                                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                        <span style={{ fontSize: '13px', fontWeight: 600, color: '#333' }}>{poi.name}</span>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                            <span style={{ fontSize: '11px', color: '#999' }}>{poi.address.split(',').slice(1).join(',').trim()}</span>
+                                                            {legDistance > 0 && (
+                                                                <span style={{ fontSize: '10px', color: '#b71c1c', fontWeight: 600, background: '#fff0f0', padding: '1px 6px', borderRadius: '0' }}>
+                                  {(legDistance / 1000).toFixed(1)} км
+                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onToggleLock(poi.id);
+                                                        }}
+                                                        style={{
+                                                            background: 'none',
+                                                            border: 'none',
+                                                            color: isLocked ? 'var(--natural-sage)' : '#d1bebe',
+                                                            cursor: 'pointer',
+                                                            padding: '4px'
+                                                        }}
+                                                    >
+                                                        {isLocked ? <Lock size={12} /> : <Unlock size={12} />}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+
+                                    {activeRoute.isReturnBack && (
+                                        <div
+                                            onClick={() => {
+                                                const idx = activeRoute.points.length - 1;
+                                                onSelectSegment(activeRoute.activeSegmentIndex === idx ? null : idx);
+                                            }}
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '12px',
+                                                position: 'relative',
+                                                cursor: 'pointer',
+                                                padding: '6px',
+                                                borderRadius: '0',
+                                                background: activeRoute.activeSegmentIndex === activeRoute.points.length - 1 ? '#f3f4f6' : 'transparent'
+                                            }}
+                                        >
+                                            <div style={{
+                                                position: 'absolute',
+                                                left: '11px',
+                                                top: '-16px',
+                                                height: '16px',
+                                                width: '2px',
+                                                background: '#eee'
+                                            }} />
+                                            <div style={{ width: '24px', display: 'flex', justifyContent: 'center' }}>
+                                                <Undo2 size={16} color={activeRoute.activeSegmentIndex === activeRoute.points.length - 1 ? 'var(--natural-sage)' : "#999"} />
+                                            </div>
+                                            <span style={{ fontSize: '13px', color: '#666', fontWeight: activeRoute.activeSegmentIndex === activeRoute.points.length - 1 ? 600 : 400 }}>Возврат к старту</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div style={{
+                                    marginTop: '20px',
+                                    padding: '12px',
+                                    background: '#f9fafb',
+                                    borderRadius: '0',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center'
+                                }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontSize: '11px', color: '#999', textTransform: 'uppercase' }}>
+                      {activeRoute.activeSegmentIndex != null ? 'Участок' : 'Всего'}
+                    </span>
+                                        <span style={{ fontSize: '14px', fontWeight: 700, color: '#333' }}>
+                      {activeRoute.activeSegmentIndex != null && activeRoute.segmentDistances && activeRoute.activeSegmentIndex > 0
+                          ? (activeRoute.segmentDistances[activeRoute.activeSegmentIndex - 1] > 0
+                              ? (activeRoute.segmentDistances[activeRoute.activeSegmentIndex - 1] / 1000).toFixed(1) + ' км'
+                              : 'Расчёт...')
+                          : (activeRoute.totalDistance > 0
+                              ? (activeRoute.totalDistance / 1000).toFixed(1) + ' км'
+                              : 'Расчёт...')}
+                    </span>
+                                    </div>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <span style={{ fontSize: '11px', color: '#999', textTransform: 'uppercase' }}>Шаги</span>
+                                        <span style={{ fontSize: '14px', fontWeight: 700, color: '#333' }}>
+                      {activeRoute.activeSegmentIndex != null && activeRoute.segmentDistances && activeRoute.activeSegmentIndex > 0
+                          ? (activeRoute.segmentDistances[activeRoute.activeSegmentIndex - 1] > 0
+                              ? (activeRoute.segmentDistances[activeRoute.activeSegmentIndex - 1] / 0.7).toFixed(0)
+                              : '...')
+                          : (activeRoute.totalDistance > 0
+                              ? (activeRoute.totalDistance / 0.7).toFixed(0)
+                              : '...')}
+                    </span>
+                                    </div>
+                                </div>
+                            </section>
+                        ) : (
+                            /* Settings View with Category Selection */
+                            <>
+                                <section>
+                                    <p className="section-title">Интересные места</p>
+                                    <div className="categories-grid">
+                                        {categories.map((cat) => (
+                                            <div
+                                                key={cat.id}
+                                                onClick={() => toggleCategory(cat.id)}
+                                                className={`category-item ${selectedCategories.includes(cat.id) ? 'active' : ''}`}
+                                            >
+                        <span className="category-icon">
+                          {cat.icon}
+                        </span>
+                                                <span className="category-label">{cat.label}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+
+                                <section className="divider">
+                                    <div className="slider-header">
+                                        <p className="section-title">Количество шагов</p>
+                                        <span className="steps-badge">
+                      {minSteps.toLocaleString()} — {maxSteps.toLocaleString()}
+                    </span>
+                                    </div>
+
+                                    <div className="range" style={{
+                                        '--value-1': minSteps,
+                                        '--value-2': maxSteps
+                                    } as React.CSSProperties}>
+                                        <div className="track"></div>
+                                        <div className="progress"></div>
+                                        <div className="thumbs">
+                                            <input
+                                                className="range-input"
+                                                type="range"
+                                                min="1000"
+                                                max="25000"
+                                                step="500"
+                                                value={minSteps}
+                                                onChange={(e) => {
+                                                    const val = Math.min(parseInt(e.target.value), maxSteps - 500);
+                                                    setMinSteps(val);
+                                                }}
+                                            />
+                                            <output
+                                                className="range-output"
+                                                style={{ '--value': `${((minSteps - 1000) / (25000 - 1000) * 100)}%` } as React.CSSProperties}
+                                            >
+                                                {minSteps}
+                                            </output>
+                                            <input
+                                                className="range-input"
+                                                type="range"
+                                                min="1000"
+                                                max="25000"
+                                                step="500"
+                                                value={maxSteps}
+                                                onChange={(e) => {
+                                                    const val = Math.max(parseInt(e.target.value), minSteps + 500);
+                                                    setMaxSteps(val);
+                                                }}
+                                            />
+                                            <output
+                                                className="range-output"
+                                                style={{ '--value': `${((maxSteps - 1000) / (25000 - 1000) * 100)}%` } as React.CSSProperties}
+                                            >
+                                                {maxSteps}
+                                            </output>
+                                        </div>
+                                    </div>
+
+                                    <div className="slider-labels" style={{ marginTop: '8px' }}>
+                                        <span>1к</span>
+                                        <span>12к</span>
+                                        <span>25к</span>
+                                    </div>
+
+                                    {/* Toggle */}
+                                    <div
+                                        className="toggle-row"
+                                        style={{ marginTop: '20px' }}
+                                        onClick={() => setIsReturnBack(!isReturnBack)}
+                                    >
+                                        <div className="toggle-info">
+                                            <div className={`toggle-icon ${isReturnBack ? 'active' : 'inactive'}`}>
+                                                <Undo2 size={16} />
+                                            </div>
+                                            <span style={{ fontSize: '14px', fontWeight: 500 }}>Вернуться назад</span>
+                                        </div>
+
+                                        <div className={`toggle-bg ${isReturnBack ? 'active' : 'inactive'}`}>
+                                            <div className="toggle-knob" />
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <button
+                                    className="submit-button"
+                                    onClick={handleBuild}
+                                >
+                                    Построить маршрут
+                                </button>
+                            </>
+                        )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+}
+
+================
+File: components\RoutingControl.tsx
+================
+import { useEffect, useRef } from 'react';
+import L from 'leaflet';
+import 'leaflet-routing-machine';
+import { useMap } from 'react-leaflet';
+
+interface RoutingControlProps {
+    waypoints: L.LatLng[];
+    onRouteFound?: (distance: number, coordinates: [number, number][], legDistances?: number[]) => void;
+}
+
+const RoutingControl = ({ waypoints, onRouteFound }: RoutingControlProps) => {
+    const map = useMap();
+    const routingControlRef = useRef<L.Routing.Control | null>(null);
+
+    useEffect(() => {
+        if (!map || waypoints.length < 2) return;
+
+        if (routingControlRef.current) {
+            const currentWaypoints = routingControlRef.current.getWaypoints().map(w => w.latLng);
+            const isSame = currentWaypoints.length === waypoints.length &&
+                currentWaypoints.every((w, i) => w.lat === waypoints[i].lat && w.lng === waypoints[i].lng);
+
+            if (!isSame) {
+                routingControlRef.current.setWaypoints(waypoints);
+            }
+            return;
+        }
+
+        try {
+            const routingControl = L.Routing.control({
+                waypoints,
+                routeWhileDragging: false,
+                addWaypoints: false,
+                fitSelectedRoutes: false, // Turn off auto-fit to avoid conflicts
+                showAlternatives: false,
+                lineOptions: {
+                    styles: [
+                        { color: '#ef4444', opacity: 0.6, weight: 6, dashArray: '10, 10' },
+                        { color: '#ef4444', opacity: 1, weight: 2 }
+                    ],
+                    extendToWaypoints: true,
+                    missingRouteTolerance: 10
+                },
+                router: L.Routing.osrmv1({
+                    serviceUrl: 'https://router.project-osrm.org/route/v1',
+                    profile: 'foot'
+                }),
+                // @ts-ignore
+                createMarker: () => null,
+            }).addTo(map);
+
+            routingControlRef.current = routingControl;
+
+            const container = routingControl.getContainer();
+            if (container) {
+                container.style.display = 'none';
+            }
+
+            routingControl.on('routesfound', (e) => {
+                const routes = e.routes;
+                if (routes && routes.length > 0) {
+                    const mainRoute = routes[0];
+                    const summary = mainRoute.summary;
+                    const coordinates = mainRoute.coordinates.map((c: L.LatLng) => [c.lat, c.lng] as [number, number]);
+                    const legDistances = mainRoute.instructions ?
+                        [] : [];
+                    if (waypoints.length > 0) {
+                        const bounds = L.latLngBounds(coordinates);
+                        map.fitBounds(bounds, { padding: [50, 50] });
+                    }
+
+                    if (onRouteFound) {
+                        onRouteFound(summary.totalDistance, coordinates, legDistances);
+                    }
+                }
+            });
+        } catch (err) {
+            console.error('Routing initialization error:', err);
+        }
+        return () => {
+            if (routingControlRef.current) {
+                const ctrl = routingControlRef.current;
+                routingControlRef.current = null;
+                setTimeout(() => {
+                    try {
+                        map.removeControl(ctrl);
+                    } catch (err) {
+                    }
+                }, 0);
+            }
+        };
+    }, [map, waypoints, onRouteFound]);
+
+    return null;
+};
+
+export default RoutingControl;
+
+================
+File: components\Map\MapController.tsx
+================
+import { useEffect, useRef } from 'react';
+import { useMap } from 'react-leaflet';
+import { RouteData } from '../../types';
+import L from 'leaflet';
+
+interface MapControllerProps {
+  active: boolean;
+  center: [number, number];
+  radius: number;
+  route: RouteData | null;
+}
+
+export default function MapController({ active, center, radius, route }: MapControllerProps) {
+  const map = useMap();
+  const lastRouteId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (active && center) {
+      // Smoothly fly to normalized center
+      map.flyTo(center, 15, { duration: 1.5 });
+    }
+  }, [active, center, map]);
+
+  useEffect(() => {
+    if (route && route.points.length > 0) {
+      // Generate a simple ID to detect if it's a NEW route
+      const routeId = JSON.stringify(route.pois.map(p => p.id));
+
+      if (routeId !== lastRouteId.current) {
+        lastRouteId.current = routeId;
+
+        // Fit bounds smoothly
+        const bounds = L.latLngBounds(route.points.map(p => [p[0], p[1]]));
+        map.flyToBounds(bounds, {
+          padding: [50, 50],
+          duration: 1.5,
+          easeLinearity: 0.1
+        });
+      }
+
+      // If a segment is selected, zoom into it
+      if (route.activeSegmentIndex != null) {
+        const from = route.points[route.activeSegmentIndex - 1] || route.points[0];
+        const to = route.points[route.activeSegmentIndex];
+        const segBounds = L.latLngBounds([[from[0], from[1]], [to[0], to[1]]]);
+        map.flyToBounds(segBounds, {
+          padding: [80, 80],
+          duration: 1.2
+        });
+      }
+    }
+  }, [route, map]);
+
+  return null;
+}
+
+================
+File: components\Map\MapControls.tsx
+================
+import React from 'react';
+import { motion } from 'motion/react';
+import { Radar } from 'lucide-react';
+import MarkerTool from '../MarkerTool';
+
+interface MapControlsProps {
+    isLoading: boolean;
+    isScanning: boolean;
+    onToggleRadar: () => void;
+    onDragStart: (e: React.DragEvent) => void;
+}
+
+export default function MapControls({ isLoading, isScanning, onToggleRadar, onDragStart }: MapControlsProps) {
+    return (
+        <div className="marker-tool-container" id="tools-sidebar">
+            <MarkerTool onDragStart={onDragStart} />
+
+            {/* Radar Toggle Button */}
+            <div style={{ position: 'relative' }}>
+                <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={onToggleRadar}
+                    disabled={isLoading}
+                    className={`radar-button ${isScanning || isLoading ? 'active' : ''}`}
+                    id="radar-trigger"
+                >
+                    {isLoading ? (
+                        <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        >
+                            <Radar size={24} />
+                        </motion.div>
+                    ) : (
+                        <Radar size={24} />
+                    )}
+                </motion.button>
+                <span className="marker-tooltip">Радар (поиск POI)</span>
+            </div>
+        </div>
+    );
+}
+
+================
+File: components\Map\MapEventsHandler.tsx
+================
+import { useEffect } from 'react';
+import { useMap } from 'react-leaflet';
+
+interface MapEventsHandlerProps {
+  onMarkerAdd: (pos: [number, number]) => void;
+}
+
+export default function MapEventsHandler({ onMarkerAdd }: MapEventsHandlerProps) {
+  const map = useMap();
+  
+  useEffect(() => {
+    const container = map.getContainer();
+    
+    const handleDragOver = (e: DragEvent) => {
+      e.preventDefault();
+      if (e.dataTransfer) {
+        e.dataTransfer.dropEffect = 'move';
+      }
+    };
+    
+    const handleDrop = (e: DragEvent) => {
+      e.preventDefault();
+      const latlng = map.mouseEventToLatLng(e);
+      onMarkerAdd([latlng.lat, latlng.lng]);
+    };
+    
+    container.addEventListener('dragover', handleDragOver);
+    container.addEventListener('drop', handleDrop);
+    
+    return () => {
+      container.removeEventListener('dragover', handleDragOver);
+      container.removeEventListener('drop', handleDrop);
+    };
+  }, [map, onMarkerAdd]);
+
+  return null;
+}
+
+================
+File: components\Map\POIMarkers.tsx
+================
+import React, { useState } from 'react';
+import { Marker, Popup } from 'react-leaflet';
+import {
+    Radar,
+    ChevronLeft,
+    ChevronRight,
+    Music,
+    Utensils,
+    Coffee,
+    ShoppingBag,
+    Trees,
+    Bed,
+    Gamepad2,
+    Dumbbell,
+    Building2,
+    Store,
+    Library,
+    MapPin,
+    Banknote,
+    Sparkles
+} from 'lucide-react';
+import { POI } from '../../types';
+
+interface POIMarkersProps {
+    pois: POI[];
+}
+
+export const getCategoryConfig = (category: string) => {
+    const cat = category.toLowerCase();
+    if (cat.includes('culture') || cat.includes('art')) {
+        return { icon: Library, color: '#e91e63' };
+    }
+    if (cat.includes('food') || cat.includes('restaura')) {
+        return { icon: Utensils, color: '#f97316' };
+    }
+    if (cat.includes('cafe') || cat.includes('coffee')) {
+        return { icon: Coffee, color: '#a16207' };
+    }
+    if (cat.includes('shop') || cat.includes('store') || cat.includes('mall')) {
+        return { icon: ShoppingBag, color: '#3b82f6' };
+    }
+    if (cat.includes('park') || cat.includes('garden') || cat.includes('forest')) {
+        return { icon: Trees, color: '#e53935' };
+    }
+    if (cat.includes('hotel') || cat.includes('hostel') || cat.includes('accomm')) {
+        return { icon: Bed, color: '#a855f7' };
+    }
+    if (cat.includes('enterta') || cat.includes('cinema') || cat.includes('game')) {
+        return { icon: Gamepad2, color: '#8b5cf6' };
+    }
+    if (cat.includes('sport') || cat.includes('gym') || cat.includes('fitness')) {
+        return { icon: Dumbbell, color: '#06b6d4' };
+    }
+    if (cat.includes('educat') || cat.includes('school') || cat.includes('univers')) {
+        return { icon: Building2, color: '#6366f1' };
+    }
+    if (cat.includes('retail')) {
+        return { icon: Banknote, color: '#c62828' };
+    }
+    if (cat.includes('beauty') || cat.includes('wellness')) {
+        return { icon: Sparkles, color: '#db2777' };
+    }
+    return { icon: MapPin, color: '#b71c1c' };
+};
+
+function POIPopupContent({ poi }: { poi: POI }) {
+    const [currentReviewIdx, setCurrentReviewIdx] = useState(0);
+    const reviews = poi.reviews || [];
+    const hasMultipleReviews = reviews.length > 1;
+
+    const config = getCategoryConfig(poi.category);
+    const CategoryIcon = config.icon;
+
+    const nextReview = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setCurrentReviewIdx((prev) => (prev + 1) % reviews.length);
+    };
+
+    const prevReview = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setCurrentReviewIdx((prev) => (prev - 1 + reviews.length) % reviews.length);
+    };
+
+    return (
+        <div style={{ maxWidth: '240px', fontFamily: 'Inter, sans-serif' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <div style={{ padding: '6px', background: config.color, borderRadius: '8px', color: 'white' }}>
+                    <CategoryIcon size={16} />
+                </div>
+                <div>
+                    <strong style={{ fontSize: '14px', display: 'block' }}>{poi.name}</strong>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <div style={{ color: '#f59e0b', fontSize: '12px', letterSpacing: '1px' }}>
+                            {'★'.repeat(Math.round(poi.predicted_rating))}
+                            <span style={{ color: '#e5e7eb' }}>{'★'.repeat(5 - Math.round(poi.predicted_rating))}</span>
+                        </div>
+                        <span style={{ fontSize: '10px', color: '#666' }}>({poi.review_count})</span>
+                    </div>
+                </div>
+            </div>
+
+            <p style={{ fontSize: '12px', color: '#666', margin: '4px 0' }}>{poi.address}</p>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
+                <div style={{ fontSize: '10px', color: config.color, fontWeight: 'bold', textTransform: 'uppercase', background: `${config.color}15`, padding: '2px 6px', borderRadius: '4px' }}>
+                    {poi.category}
+                </div>
+                <div style={{ fontSize: '10px', color: '#e53935', fontWeight: 'medium' }}>
+                    Score: {(poi.score * 100).toFixed(1)}%
+                </div>
+            </div>
+
+            {reviews.length > 0 && (
+                <div style={{ marginTop: '12px', borderTop: '1px solid #eee', paddingTop: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                        <p style={{ fontSize: '11px', fontWeight: 'bold', color: '#444', margin: 0 }}>Отзывы:</p>
+                        {hasMultipleReviews && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ fontSize: '10px', color: '#999' }}>{currentReviewIdx + 1}/{reviews.length}</span>
+                                <div style={{ display: 'flex', gap: '2px' }}>
+                                    <button
+                                        onClick={prevReview}
+                                        style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', color: '#999' }}
+                                    >
+                                        <ChevronLeft size={14} />
+                                    </button>
+                                    <button
+                                        onClick={nextReview}
+                                        style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', color: '#999' }}
+                                    >
+                                        <ChevronRight size={14} />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    <div style={{
+                        maxHeight: '100px',
+                        overflowY: 'auto',
+                        margin: '4px 0',
+                        paddingRight: '4px'
+                    }}>
+                        <p style={{ fontSize: '10px', fontStyle: 'italic', color: '#555', lineHeight: '1.4' }}>
+                            "{reviews[currentReviewIdx]}"
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            <div style={{ marginTop: '12px' }}>
+                <button
+                    style={{
+                        width: '100%',
+                        background: '#f3f4f6',
+                        color: '#374151',
+                        border: '1px solid #e5e7eb',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        fontSize: '11px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px'
+                    }}
+                >
+                    Оставить отзыв
+                </button>
+            </div>
+        </div>
+    );
+}
+
+export default function POIMarkers({ pois }: POIMarkersProps) {
+    return (
+        <>
+            {pois.map((poi) => (
+                <Marker
+                    key={`poi-${poi.id}`}
+                    position={[poi.coordinates[1], poi.coordinates[0]]}
+                >
+                    <Popup>
+                        <POIPopupContent poi={poi} />
+                    </Popup>
+                </Marker>
+            ))}
+        </>
+    );
+}
+
+================
+File: components\Map\RadarOverlay.tsx
+================
+import React from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+
+interface RadarOverlayProps {
+    active: boolean;
+    radius: number;
+}
+
+export default function RadarOverlay({ active, radius }: RadarOverlayProps) {
+    if (!active) return null;
+
+    return (
+        <div
+            style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                pointerEvents: 'none',
+                zIndex: 999,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+            }}
+        >
+            <AnimatePresence>
+                {[0, 1, 2].map((i) => (
+                    <motion.div
+                        key={i}
+                        initial={{ width: 0, height: 0, opacity: 0.6 }}
+                        animate={{
+                            width: radius * 2,
+                            height: radius * 2,
+                            opacity: 0
+                        }}
+                        transition={{
+                            duration: 2.5,
+                            repeat: Infinity,
+                            delay: i * 0.8,
+                            ease: "easeOut"
+                        }}
+                        style={{
+                            position: 'absolute',
+                            border: '2px solid var(--natural-sage)',
+                            borderRadius: '50%',
+                            background: 'radial-gradient(circle, rgba(229, 57, 53, 0.2) 0%, rgba(229, 57, 53, 0) 70%)'
+                        }}
+                    />
+                ))}
+            </AnimatePresence>
+        </div>
+    );
+}
+
+================
+File: components\Map\UserMarkers.tsx
+================
+import React from 'react';
+import { Marker, Popup } from 'react-leaflet';
+import { UserMarker } from '../../types';
+
+import L from 'leaflet';
+
+const RedIcon = L.icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+});
+
+interface UserMarkersProps {
+    markers: UserMarker[];
+    onMarkerDelete: (id: string) => void;
+    onMarkerMove: (id: string, newPos: [number, number]) => void;
+}
+
+export default function UserMarkers({ markers, onMarkerDelete, onMarkerMove }: UserMarkersProps) {
+    return (
+        <>
+            {markers.map((marker) => (
+                <Marker
+                    key={marker.id}
+                    position={marker.position}
+                    draggable={true}
+                    icon={RedIcon}
+                    eventHandlers={{
+                        dragend: (e) => {
+                            const newLatlng = e.target.getLatLng();
+                            onMarkerMove(marker.id, [newLatlng.lat, newLatlng.lng]);
+                        }
+                    }}
+                >
+                    <Popup>
+                        <div style={{ padding: '4px' }}>
+                            <strong style={{ display: 'block', marginBottom: '4px' }}>{marker.title}</strong>
+                            <button
+                                onClick={() => onMarkerDelete(marker.id)}
+                                style={{
+                                    background: '#ff4d4d',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '4px 8px',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    fontSize: '10px'
+                                }}
+                            >
+                                Удалить
+                            </button>
+                        </div>
+                    </Popup>
+                </Marker>
+            ))}
+        </>
+    );
+}
+
+================
+File: config\mapConfig.ts
+================
+export const pointStyle = {
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconSize: [25, 41] as [number, number],
+  iconAnchor: [12, 41] as [number, number],
+  popupAnchor: [1, -34] as [number, number],
+  shadowSize: [41, 41] as [number, number],
+};
+
+================
+File: hooks\UseMapRoutes.ts
+================
+import { useState, useCallback, useEffect, useMemo } from 'react';
+
+import L from 'leaflet';
+
+import { UserMarker, POI, RouteData } from '../types';
+
+
+
+// Haversine distance in meters
+
+function getDistance(pos1: [number, number], pos2: [number, number]) {
+
+    const R = 6371e3; // meters
+
+    const φ1 = pos1[0] * Math.PI / 180;
+
+    const φ2 = pos2[0] * Math.PI / 180;
+
+    const Δφ = (pos2[0] - pos1[0]) * Math.PI / 180;
+
+    const Δλ = (pos2[1] - pos1[1]) * Math.PI / 180;
+
+
+
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+
+        Math.cos(φ1) * Math.cos(φ2) *
+
+        Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+
+
+    return R * c;
+
+}
+
+
+
+export function useMapRoutes() {
+
+    const [markers, setMarkers] = useState<UserMarker[]>([]);
+
+    const [pois, setPois] = useState<POI[]>([]);
+
+    const [isScanning, setIsScanning] = useState(false);
+
+    const [isLoading, setIsLoading] = useState(false);
+
+    const [radarCenter, setRadarCenter] = useState<[number, number]>([51.5335, 46.0342]);
+
+    const [route, setRoute] = useState<RouteData | null>(null);
+
+    const [lockedPoiIds, setLockedPoiIds] = useState<Set<number>>(new Set());
+
+    const [lastRouteSettings, setLastRouteSettings] = useState<{ categories: string[], minSteps: number, maxSteps: number, isReturnBack: boolean } | null>(null);
+
+
+
+    const fetchPOIs = useCallback(async (center: [number, number]) => {
+
+        setIsLoading(true);
+
+        try {
+
+            const response = await fetch(`/poi/nearby/recommended?lat=${center[0]}&lng=${center[1]}&limit=50`);
+
+            if (response.ok) {
+
+                const data = await response.json();
+
+                setPois(data);
+
+            } else {
+
+                throw new Error('Response not ok');
+
+            }
+
+        } catch (error) {
+
+            console.error('Failed to fetch POIs:', error);
+
+            // Fallback mocked data
+
+            setPois([
+
+                {
+
+                    id: 999,
+
+                    name: "Тестовая точка",
+
+                    address: "Улица Тестовая, 1",
+
+                    coordinates: [center[1] + 0.005, center[0] + 0.005],
+
+                    category: "culture",
+
+                    score: 0.95,
+
+                    predicted_rating: 5,
+
+                    model_confidence: 0.8,
+
+                    review_count: 1
+
+                },
+
+                {
+
+                    id: 998,
+
+                    name: "Парк Отдыха",
+
+                    address: "Улица Зеленая, 10",
+
+                    coordinates: [center[1] - 0.005, center[0] + 0.005],
+
+                    category: "natural_outdoor",
+
+                    score: 0.92,
+
+                    predicted_rating: 4,
+
+                    model_confidence: 0.85,
+
+                    review_count: 20
+
+                },
+
+                {
+
+                    id: 997,
+
+                    name: "Кафе Уют",
+
+                    address: "Проспект Мира, 5",
+
+                    coordinates: [center[1] + 0.005, center[0] - 0.005],
+
+                    category: "food_drink",
+
+                    score: 0.88,
+
+                    predicted_rating: 4.5,
+
+                    model_confidence: 0.9,
+
+                    review_count: 50
+
+                }
+
+            ]);
+
+        } finally {
+
+            setIsLoading(false);
+
+            setTimeout(() => setIsScanning(false), 3000);
+
+        }
+
+    }, []);
+
+
+
+    const handleBuildRoute = useCallback(async (settings: { categories: string[], minSteps: number, maxSteps: number, isReturnBack: boolean }) => {
+
+        if (pois.length === 0) return;
+
+        setLastRouteSettings(settings);
+
+
+
+        // Filter POIs by categories
+
+        const filteredPois = pois.filter(p => {
+
+            return settings.categories.some(cat => p.category.toLowerCase().includes(cat.toLowerCase()));
+
+        });
+
+
+
+        if (filteredPois.length < 2 && lockedPoiIds.size === 0) {
+
+            alert("Недостаточно точек для построения маршрута. Попробуйте выбрать больше категорий.");
+
+            return;
+
+        }
+
+
+
+        setIsLoading(true);
+
+
+
+        try {
+
+            const lockedPois = route ? route.pois.filter(p => lockedPoiIds.has(p.id)) : [];
+
+            const selectedPois: POI[] = [...lockedPois];
+
+
+
+            const currentUnlockedIds = route ? route.pois.filter(p => !lockedPoiIds.has(p.id)).map(p => p.id) : [];
+
+
+
+            const categoryCounts = new Map<string, number>();
+
+            selectedPois.forEach(p => {
+
+                const cat = p.category.toLowerCase();
+
+                categoryCounts.set(cat, (categoryCounts.get(cat) || 0) + 1);
+
+            });
+
+
+
+            const sorted = [...filteredPois]
+
+                .filter(p => !selectedPois.find(sp => sp.id === p.id) && !currentUnlockedIds.includes(p.id))
+
+                .sort((a, b) => b.score - a.score);
+
+
+
+            const avgSteps = (settings.minSteps + settings.maxSteps) / 2;
+
+            const targetMeters = avgSteps * 0.7;
+
+            const targetPoiCount = Math.max(2, Math.min(8, Math.round(targetMeters / 600)));
+
+
+
+            for (const poi of sorted) {
+
+                if (selectedPois.length >= targetPoiCount) break;
+
+
+
+                const cat = poi.category.toLowerCase();
+
+                const currentCount = categoryCounts.get(cat) || 0;
+
+
+
+                if (cat.includes('food_drink') && currentCount >= 2) continue;
+
+
+
+                if (currentCount === 0) {
+
+                    selectedPois.push(poi);
+
+                    categoryCounts.set(cat, 1);
+
+                }
+
+            }
+
+
+
+            if (selectedPois.length < targetPoiCount) {
+
+                for (const poi of sorted) {
+
+                    if (selectedPois.length >= targetPoiCount) break;
+
+                    if (selectedPois.find(p => p.id === poi.id)) continue;
+
+
+
+                    const cat = poi.category.toLowerCase();
+
+                    const currentCount = categoryCounts.get(cat) || 0;
+
+
+
+                    if (cat.includes('food_drink') && currentCount >= 2) continue;
+
+
+
+                    selectedPois.push(poi);
+
+                    categoryCounts.set(cat, currentCount + 1);
+
+                }
+
+            }
+
+
+
+            if (selectedPois.length < 2) {
+
+                const fallbackPool = filteredPois.filter(p => !selectedPois.find(sp => sp.id === p.id));
+
+                for (const poi of fallbackPool) {
+
+                    if (selectedPois.length >= targetPoiCount) break;
+
+                    selectedPois.push(poi);
+
+                }
+
+            }
+
+
+
+            const startPoint: [number, number] = markers.length > 0 ? markers[markers.length - 1].position : radarCenter;
+
+
+
+            const remaining = [...selectedPois];
+
+            const orderedPois: POI[] = [];
+
+            const waypointChain: [number, number][] = [startPoint];
+
+            let currentPos = startPoint;
+
+
+
+            while (remaining.length > 0) {
+
+                let closestIdx = 0;
+
+                let minD = Infinity;
+
+                remaining.forEach((p, idx) => {
+
+                    const d = getDistance(currentPos, [p.coordinates[1], p.coordinates[0]]);
+
+                    if (d < minD) {
+
+                        minD = d;
+
+                        closestIdx = idx;
+
+                    }
+
+                });
+
+                const nextPoi = remaining.splice(closestIdx, 1)[0];
+
+                orderedPois.push(nextPoi);
+
+                const nextCoords: [number, number] = [nextPoi.coordinates[1], nextPoi.coordinates[0]];
+
+                waypointChain.push(nextCoords);
+
+                currentPos = nextCoords;
+
+            }
+
+
+
+            if (settings.isReturnBack) {
+
+                waypointChain.push(startPoint);
+
+            }
+
+
+
+            setRoute({
+
+                points: waypointChain,
+
+                segments: [],
+
+                pois: orderedPois,
+
+                totalDistance: 0,
+
+                isReturnBack: settings.isReturnBack,
+
+                activeSegmentIndex: null,
+
+                segmentDistances: new Array(orderedPois.length + (settings.isReturnBack ? 1 : 0)).fill(0)
+
+            });
+
+
+
+        } catch (error) {
+
+            console.error('Routing error:', error);
+
+            alert("Не удалось построить маршрут по дорогам.");
+
+        } finally {
+
+            setIsLoading(false);
+
+        }
+
+    }, [pois, lockedPoiIds, route, markers, radarCenter]);
+
+
+
+    useEffect(() => {
+
+        if (isScanning) {
+
+            fetchPOIs(radarCenter);
+
+        }
+
+    }, [isScanning, radarCenter, fetchPOIs]);
+
+
+
+    const handleAddMarker = useCallback((position: [number, number]) => {
+
+        const newMarker: UserMarker = {
+
+            id: Math.random().toString(36).substring(7),
+
+            position,
+
+            title: 'Стартовая точка'
+
+        };
+
+        setMarkers([newMarker]);
+
+        setRadarCenter(position);
+
+    }, []);
+
+
+
+    const handleMarkerMove = useCallback((id: string, newPos: [number, number]) => {
+
+        setMarkers(prev => prev.map(m =>
+
+            m.id === id ? { ...m, position: newPos } : m
+
+        ));
+
+        setRadarCenter(newPos);
+
+    }, []);
+
+
+
+    const handleMarkerDelete = useCallback((id: string) => {
+
+        setMarkers(prev => prev.filter(m => m.id !== id));
+
+    }, []);
+
+
+
+    const handleSelectSegment = useCallback((index: number | null) => {
+
+        setRoute(prev => prev ? { ...prev, activeSegmentIndex: index } : null);
+
+    }, []);
+
+
+
+    const handleToggleLock = useCallback((id: number) => {
+
+        setLockedPoiIds(prev => {
+
+            const next = new Set(prev);
+
+            if (next.has(id)) next.delete(id);
+
+            else next.add(id);
+
+            return next;
+
+        });
+
+    }, []);
+
+
+
+    const handleClearRoute = useCallback(() => {
+
+        setRoute(null);
+
+        setLockedPoiIds(new Set());
+
+    }, []);
+
+
+
+    const handleRebuild = useCallback(() => {
+
+        if (lastRouteSettings) {
+
+            handleBuildRoute(lastRouteSettings);
+
+        }
+
+    }, [lastRouteSettings, handleBuildRoute]);
+
+
+
+    const toggleRadar = useCallback(() => {
+
+        if (isScanning) return;
+
+        setIsScanning(true);
+
+        if (markers.length > 0) {
+
+            setRadarCenter(markers[markers.length - 1].position);
+
+        }
+
+    }, [isScanning, markers]);
+
+
+
+    const waypoints = useMemo(() => {
+
+        if (!route) return [];
+
+        if (route.activeSegmentIndex != null && route.activeSegmentIndex > 0) {
+
+            const from = route.points[route.activeSegmentIndex - 1];
+
+            const to = route.points[route.activeSegmentIndex];
+
+            return [L.latLng(from[0], from[1]), L.latLng(to[0], to[1])];
+
+        }
+
+        return route.points.map(p => L.latLng(p[0], p[1]));
+
+    }, [route]);
+
+
+
+    return {
+
+        markers,
+
+        pois,
+
+        isScanning,
+
+        isLoading,
+
+        radarCenter,
+
+        route,
+
+        lockedPoiIds,
+
+        waypoints,
+
+        setRoute,
+
+        handleBuildRoute,
+
+        handleAddMarker,
+
+        handleMarkerMove,
+
+        handleMarkerDelete,
+
+        handleSelectSegment,
+
+        handleToggleLock,
+
+        handleClearRoute,
+
+        handleRebuild,
+
+        toggleRadar
+
+    };
+
+}
+
+================
+File: views\MapView.tsx
+================
+import MapCanvas from '../components/MapCanvas';
+
+export default function MapView() {
+  return <MapCanvas />;
+}
